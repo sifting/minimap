@@ -362,15 +362,37 @@ private void write_svg (string path, Edge[] edges)
     auto height = _maxs[1] - _mins[1];
     auto hwidth = 0.5*width;
     auto hheight = 0.5*height;
-    file.writefln ("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %s %s\">", width, height);
+    auto top = 0.0f;
+    auto left = 0.0f;
+    if (_raw)
+    {
+        top = _mins[1];
+        left = _mins[0];
+        width = _maxs[0];
+        height = _maxs[1];
+    }
+    file.writefln ("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%s %s %s %s\">", top, left, width, height);
     foreach (e; edges)
     {
         Point a = e.vert;
         Point b = e.next.vert;
+
+        float x0 = a.x;
+        float y0 = a.y;
+        float x1 = b.x;
+        float y1 = b.y;
+        if (!_raw)
+        {
+            x0 = hwidth + a.x - _centre[0];
+            y0 = hheight + a.y - _centre[1];
+            x1 = hwidth + b.x - _centre[0];
+            y1 = hheight + b.y - _centre[1];
+        }
+
         file.writefln (
             "<line x1=\"%s\" y1=\"%s\" x2=\"%s\" y2=\"%s\" stroke=\"black\"/>",
-            hwidth + a.x - _centre[0], hheight + a.y - _centre[1],
-            hwidth + b.x - _centre[0], hheight + b.y - _centre[1]
+            x0, y0,
+            x1, y1
         );
     }
     file.writefln ("</svg>");
@@ -380,6 +402,8 @@ private void write_svg (string path, Edge[] edges)
 private float _padding = 256.0;
 private float _zmax = float.infinity;
 private float _zmin =-float.infinity;
+private bool _raw = false;
+private string _prefix = "";
 
 void main (string[] args)
 {
@@ -388,7 +412,9 @@ void main (string[] args)
         std.getopt.config.passThrough,
         "padding", "Padding around the origin for an edge to be printed", &_padding,
         "zmin", "Lower bound of vertices for consideration", &_zmin,
-        "zmax", "Upper bound of vertices for consideration", &_zmax
+        "zmax", "Upper bound of vertices for consideration", &_zmax,
+        "raw", "Keep lines centered around origin", &_raw,
+        "prefix", "Prefix to append to output", &_prefix
     );
     if (info.helpWanted || args.length < 2)
     {
@@ -404,5 +430,5 @@ void main (string[] args)
     auto edges = edge_concave ();
     writefln ("Concave edges: %s", edges.length);
 
-    write_svg (baseName (stripExtension (args[$-1])) ~ ".svg", edges);
+    write_svg (_prefix ~ baseName (stripExtension (args[$-1])) ~ ".svg", edges);
 }
