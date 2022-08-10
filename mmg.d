@@ -368,8 +368,6 @@ private void write_svg (string path, Edge[] edges)
     {
         top = _mins[1];
         left = _mins[0];
-        width = _maxs[0];
-        height = _maxs[1];
     }
     file.writefln ("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%s %s %s %s\">", top, left, width, height);
     foreach (e; edges)
