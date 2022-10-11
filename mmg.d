@@ -423,7 +423,7 @@ private void write_json (string path, Edge[] edges)
             y1 = hheight + b.y - _centre[1];
         }
         file.writefln (
-            "{\"points\": [[%s %s %s], [%s %s %s]]}%s",
+            "{\"points\": [[%.2f, %.2f, %.2f], [%.2f, %.2f, %.2f]]}%s",
             x0, y0,
             x1, y1,
             a.z, b.z,
