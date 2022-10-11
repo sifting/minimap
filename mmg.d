@@ -388,20 +388,64 @@ private void write_svg (string path, Edge[] edges)
         }
 
         file.writefln (
-            "<line x1=\"%s\" y1=\"%s\" x2=\"%s\" y2=\"%s\" stroke=\"black\"/>",
+            "<line x1=\"%s\" y1=\"%s\" x2=\"%s\" y2=\"%s\" stroke=\"black\" z1=\"%s\" z2=\"%s\"/>",
             x0, y0,
-            x1, y1
+            x1, y1,
+            a.z, b.z
         );
     }
     file.writefln ("</svg>");
     file.close ();
 }
 
+private void write_json (string path, Edge[] edges)
+{
+    auto file = File (path, "wt");
+    auto width = _maxs[0] - _mins[0];
+    auto height = _maxs[1] - _mins[1];
+    auto hwidth = 0.5*width;
+    auto hheight = 0.5*height;
+
+    void write_entry (Edge e, bool isfinal)
+    {
+        Point a = e.vert;
+        Point b = e.next.vert;
+
+        float x0 = a.x;
+        float y0 = a.y;
+        float x1 = b.x;
+        float y1 = b.y;
+        if (!_raw)
+        {
+            x0 = hwidth + a.x - _centre[0];
+            y0 = hheight + a.y - _centre[1];
+            x1 = hwidth + b.x - _centre[0];
+            y1 = hheight + b.y - _centre[1];
+        }
+        file.writefln (
+            "{\"points\": [[%s %s %s], [%s %s %s]]}%s",
+            x0, y0,
+            x1, y1,
+            a.z, b.z,
+            isfinal ? "" : ","
+        );
+    }
+
+    file.writefln ("[");
+    foreach (e; edges[0 .. $-1])
+    {
+        write_entry (e, false);
+    }
+    write_entry (edges[$-1], true);
+    file.writefln ("]");
+    file.close ();
+}
 private float _padding = 256.0;
 private float _zmax = float.infinity;
 private float _zmin =-float.infinity;
 private bool _raw = false;
 private string _prefix = "";
+private string _outmode = "svg";
 
 void main (string[] args)
 {
@@ -412,7 +456,8 @@ void main (string[] args)
         "zmin", "Lower bound of vertices for consideration", &_zmin,
         "zmax", "Upper bound of vertices for consideration", &_zmax,
         "raw", "Keep lines centered around origin", &_raw,
-        "prefix", "Prefix to append to output", &_prefix
+        "prefix", "Prefix to append to output", &_prefix,
+        "format", "Format to use for output either json or svg", &_outmode
     );
     if (info.helpWanted || args.length < 2)
     {
@@ -428,5 +473,17 @@ void main (string[] args)
     auto edges = edge_concave ();
     writefln ("Concave edges: %s", edges.length);
 
-    write_svg (_prefix ~ baseName (stripExtension (args[$-1])) ~ ".svg", edges);
+    string base = _prefix ~ baseName (stripExtension (args[$-1]));
+    switch (_outmode)
+    {
+    default:
+        writefln ("Unknown format '%s'; using svg...", _outmode);
+        goto case;
+    case "svg":
+        write_svg (base ~ ".svg", edges);
+        break;
+    case "json":
+        write_json (base ~ ".json", edges);
+        break;
+    }
 }
